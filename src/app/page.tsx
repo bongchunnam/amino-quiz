@@ -36,12 +36,13 @@ export default function AminoAcidQuiz() {
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState("");
   const [score, setScore] = useState(0);
-  const [records, setRecords] = useState([]); // 🔥 기록 저장
+  const [records, setRecords] = useState([]);
   const [showHint, setShowHint] = useState(false);
   const [timeLeft, setTimeLeft] = useState(10);
   const [isTimeMode, setIsTimeMode] = useState(false);
   const [showPropertyQuiz, setShowPropertyQuiz] = useState(false);
   const [propertyAnswer, setPropertyAnswer] = useState({ polarity: "", group: "" });
+  const [propertyPartialCorrect, setPropertyPartialCorrect] = useState(false);
 
   useEffect(() => {
     setShuffledAminoAcids(shuffle(originalAminoAcids));
@@ -63,20 +64,27 @@ export default function AminoAcidQuiz() {
     if (isCorrect) {
       setShowPropertyQuiz(true);
     } else {
-      finishStep(isCorrect);
+      finishStep(false);
     }
   };
 
-  const finishStep = (isCorrect) => {
-    if (isCorrect) setScore(score + 1);
+  const finishStep = (isCorrect, propertyCorrect = true) => {
+    if (isCorrect && propertyCorrect) setScore(score + 1);
+
+    const partialCorrect = isCorrect && !propertyCorrect;
+
     setRecords(prev => [...prev, {
       name: current.name,
-      correct: isCorrect,
+      correct: isCorrect && propertyCorrect,
+      partial: partialCorrect,
       time: isTimeMode ? 10 - timeLeft : null
     }]);
 
-    setShowHint(false);
-    setResult(isCorrect ? "정답입니다!" : `틀렸어요! 정답: ${current.name}`);
+    if (partialCorrect) {
+      setResult(`성질 일부 오답! 정답: ${current.polarity ?? "-"}, ${current.group}`);
+    } else {
+      setResult(isCorrect && propertyCorrect ? "정답입니다!" : `틀렸어요! 정답: ${current.name}`);
+    }
 
     setTimeout(() => {
       const nextIndex = index + 1;
@@ -92,6 +100,7 @@ export default function AminoAcidQuiz() {
       setResult("");
       setShowPropertyQuiz(false);
       setPropertyAnswer({ polarity: "", group: "" });
+      setPropertyPartialCorrect(false);
       if (isTimeMode) setTimeLeft(10);
     }, 1500);
   };
@@ -102,13 +111,12 @@ export default function AminoAcidQuiz() {
   };
 
   const checkPropertyAnswer = () => {
-    const correct =
-      (current.polarity === null || propertyAnswer.polarity === current.polarity) &&
-      propertyAnswer.group === current.group;
-    setResult(
-      correct ? "성질까지 정답입니다!" : `성질 오답! 정답: ${current.polarity ?? "-"}, ${current.group}`
-    );
-    finishStep(true);
+    const needPolarity = current.group === "지방족 R기" || current.group === "비전하 R기";
+    const correctPolarity = !needPolarity || propertyAnswer.polarity === current.polarity;
+    const correctGroup = propertyAnswer.group === current.group;
+    const correct = correctPolarity && correctGroup;
+
+    finishStep(true, correct);
   };
 
   const handleKeyDown = (e) => {
@@ -176,7 +184,7 @@ export default function AminoAcidQuiz() {
               <>
                 <div className="mt-4">
                   <p className="font-semibold">이 아미노산의 성질은?</p>
-                  {current.polarity !== null && (
+                  {(current.group === "지방족 R기" || current.group === "비전하 R기") && (
                     <select
                       className="border px-2 py-1 my-2 w-full"
                       value={propertyAnswer.polarity}
@@ -226,7 +234,7 @@ export default function AminoAcidQuiz() {
           <ul className="text-sm">
             {records.map((rec, idx) => (
               <li key={idx} className="mb-1">
-                {idx + 1}. {rec.name} - {rec.correct ? "✅ 정답" : "❌ 오답"}
+                {idx + 1}. {rec.name} - {rec.correct ? "✅ 정답" : rec.partial ? "➖ 성질X" : "❌ 오답"}
                 {rec.time !== null && ` (${rec.time}s)`}
               </li>
             ))}
