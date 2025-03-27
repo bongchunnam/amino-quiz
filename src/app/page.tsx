@@ -43,6 +43,7 @@ export default function AminoAcidQuiz() {
   const [showPropertyQuiz, setShowPropertyQuiz] = useState(false);
   const [propertyAnswer, setPropertyAnswer] = useState({ polarity: "", group: "" });
   const [propertyPartialCorrect, setPropertyPartialCorrect] = useState(false);
+  const [propertyQuizEnabled, setPropertyQuizEnabled] = useState(false);
 
   useEffect(() => {
     setShuffledAminoAcids(shuffle(originalAminoAcids));
@@ -61,10 +62,10 @@ export default function AminoAcidQuiz() {
   const current = shuffledAminoAcids[index];
 
   const handleNext = (isCorrect) => {
-    if (isCorrect) {
+    if (isCorrect && propertyQuizEnabled) {
       setShowPropertyQuiz(true);
     } else {
-      finishStep(false);
+      finishStep(isCorrect);
     }
   };
 
@@ -101,6 +102,7 @@ export default function AminoAcidQuiz() {
       setShowPropertyQuiz(false);
       setPropertyAnswer({ polarity: "", group: "" });
       setPropertyPartialCorrect(false);
+      setShowHint(false);
       if (isTimeMode) setTimeLeft(10);
     }, 1500);
   };
@@ -129,7 +131,7 @@ export default function AminoAcidQuiz() {
     <div className="p-4 max-w-md mx-auto text-center">
       <h1 className="text-2xl font-bold mb-4">아미노산 이름 맞추기 퀴즈</h1>
 
-      <div className="mb-4">
+      <div className="mb-2">
         <label className="mr-2 font-medium">시간 제한 모드</label>
         <input
           type="checkbox"
@@ -138,6 +140,15 @@ export default function AminoAcidQuiz() {
             setIsTimeMode(!isTimeMode);
             setTimeLeft(10);
           }}
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="mr-2 font-medium">성질 맞추기 모드</label>
+        <input
+          type="checkbox"
+          checked={propertyQuizEnabled}
+          onChange={() => setPropertyQuizEnabled(!propertyQuizEnabled)}
         />
       </div>
 
@@ -175,7 +186,7 @@ export default function AminoAcidQuiz() {
                   >
                     제출
                   </Button>
-                  <Button onClick={() => setShowHint(true)} variant="outline">
+                  <Button onClick={() => setShowHint(!showHint)} variant="outline">
                     힌트
                   </Button>
                 </div>
